@@ -7,17 +7,17 @@ import wx
 import wx.lib.dialogs
 import wx.adv
 
-from .Frame import Frame
-from .ResultsWindow import ResultsWindow
-from .Grid import InputGrid
-from wuggy.Generator import Generator
+from .frame import Frame
+from .results_window import ResultsWindow
+from .grid import InputGrid
+from wuggy.wuggy import Wuggy
 import info
 
 import wx.grid
 
 
 class MainWindow(Frame):
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args, data_path=None, **kwds):
         # default options required for choice elements because we can't
         # get their value from the interface if they are not user-changed
         self.options = {
@@ -26,7 +26,7 @@ class MainWindow(Frame):
             "overlapping_segments_comparison": "Maximum",
         }
         self.output_window = None
-        self.generator = Generator()
+        self.wuggy = Wuggy(data_path=data_path)
         self.stop = False
         # begin wxGlade: MainWindow.__init__
         kwds["style"] = (
@@ -249,7 +249,7 @@ class MainWindow(Frame):
         # end wxGlade
         self.Bind(wx.EVT_MENU, self.OnMenuQuit, id=wx.ID_EXIT)
 
-        for module_name in sorted(self.generator._plugin_modules.keys()):
+        for module_name in sorted(self.wuggy._plugin_modules.keys()):
             self.choice_language.Append(module_name)
 
     def __set_properties(self):
@@ -321,45 +321,31 @@ class MainWindow(Frame):
         ncandidates_subsizer.Add(
             self.choice_ncandidates, 0, wx.ALIGN_CENTER_VERTICAL, 0
         )
-        ncandidates_subsizer.Add(
-            self.label_per_word, 0, wx.EXPAND, 0
-        )
+        ncandidates_subsizer.Add(self.label_per_word, 0, wx.EXPAND, 0)
         ncandidates_sizer.Add(ncandidates_subsizer, 1, wx.EXPAND, 0)
         generalsettings_sizer.Add(ncandidates_sizer, 1, wx.EXPAND, 0)
         searchtime_sizer.Add(
             self.label_search_time, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
         )
         searchtime_subsizer.Add(self.choice_search_time, 0, wx.ALIGN_CENTER_VERTICAL, 0)
-        searchtime_subsizer.Add(
-            self.label_seconds, 0, wx.EXPAND, 0
-        )
+        searchtime_subsizer.Add(self.label_seconds, 0, wx.EXPAND, 0)
         searchtime_sizer.Add(searchtime_subsizer, 1, wx.EXPAND, 0)
         generalsettings_sizer.Add(searchtime_sizer, 1, wx.EXPAND, 0)
         settingspanel_sizer.Add(
             generalsettings_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20
         )
-        filter_sizer.Add(
-            self.choice_match_segment_length, 1, wx.EXPAND, 0
-        )
-        filter_sizer.Add(
-            self.choice_match_plain_length, 1, wx.EXPAND, 0
-        )
-        filter_sizer.Add(
-            self.choice_concentric_matching, 1, wx.EXPAND, 0
-        )
+        filter_sizer.Add(self.choice_match_segment_length, 1, wx.EXPAND, 0)
+        filter_sizer.Add(self.choice_match_plain_length, 1, wx.EXPAND, 0)
+        filter_sizer.Add(self.choice_concentric_matching, 1, wx.EXPAND, 0)
 
-        segmentmatch_sizer.Add(
-            self.choice_overlapping_segments, 0, wx.EXPAND, 0
-        )
+        segmentmatch_sizer.Add(self.choice_overlapping_segments, 0, wx.EXPAND, 0)
         segmentmatch_sizer.Add(
             self.overlapping_segments_numerator,
             1,
             wx.EXPAND,
             0,
         )
-        segmentmatch_sizer.Add(
-            self.fraction_label, 1, wx.EXPAND, 0
-        )
+        segmentmatch_sizer.Add(self.fraction_label, 1, wx.EXPAND, 0)
         segmentmatch_sizer.Add(
             self.overlapping_segments_denominator,
             1,
@@ -375,24 +361,12 @@ class MainWindow(Frame):
 
         filter_sizer.Add(segmentmatch_sizer, 0, wx.EXPAND, 0)
         settingspanel_sizer.Add(filter_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
-        outputopts_sizer.Add(
-            self.choice_output_mode, 1, wx.EXPAND, 0
-        )
-        outputopts_sizer.Add(
-            self.choice_output_lexicality, 1, wx.EXPAND, 0
-        )
-        outputopts_sizer.Add(
-            self.choice_output_old20, 1, wx.EXPAND, 0
-        )
-        outputopts_sizer.Add(
-            self.choice_output_ned1, 1, wx.EXPAND, 0
-        )
-        outputopts_sizer.Add(
-            self.choice_output_overlap, 1, wx.EXPAND, 0
-        )
-        outputopts_sizer.Add(
-            self.choice_output_max_deviation, 1, wx.EXPAND, 0
-        )
+        outputopts_sizer.Add(self.choice_output_mode, 1, wx.EXPAND, 0)
+        outputopts_sizer.Add(self.choice_output_lexicality, 1, wx.EXPAND, 0)
+        outputopts_sizer.Add(self.choice_output_old20, 1, wx.EXPAND, 0)
+        outputopts_sizer.Add(self.choice_output_ned1, 1, wx.EXPAND, 0)
+        outputopts_sizer.Add(self.choice_output_overlap, 1, wx.EXPAND, 0)
+        outputopts_sizer.Add(self.choice_output_max_deviation, 1, wx.EXPAND, 0)
         settingspanel_sizer.Add(outputopts_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
         self.splitterwindow_rightpanel.SetSizer(settingspanel_sizer)
         self.splitterwindow.SplitVertically(
@@ -445,9 +419,9 @@ class MainWindow(Frame):
         if module_name.startswith("Choose"):
             pass
         else:
-            plugin_module = self.generator._plugin_modules[module_name]
+            plugin_module = self.wuggy._plugin_modules[module_name]
             t = threading.Thread(
-                target=self.generator.load, args=[plugin_module, 100, 1, False]
+                target=self.wuggy.load, args=[plugin_module, 100, 1, False]
             )
             t.start()
             message = "Loading %s language module\n\n" % module_name
@@ -455,14 +429,14 @@ class MainWindow(Frame):
             while 1:
                 t.join(0.1)
                 if t.is_alive():
-                    value = self.generator.status['progress']
+                    value = self.wuggy.status["progress"]
                     if isinstance(value, float):
                         value = round(value)
                     dialog.Update(
                         value,
-                        message + self.generator.status["message"],
+                        message + self.wuggy.status["message"],
                     )
-                    self.SetStatus(self.generator.status["message"], 0)
+                    self.SetStatus(self.wuggy.status["message"], 0)
                 else:
                     break
             self.ClearStatus()
@@ -482,7 +456,7 @@ class MainWindow(Frame):
     def OnMenuRun(self, event):  # wxGlade: MainWindow.<event_handler>
         if self.VerifyModuleLoaded() == False:
             return False
-        warnings = self.grid.Segment(self.generator, replace=False)
+        warnings = self.grid.Segment(self.wuggy.generator, replace=False)
         if self.VerifyInput() == False:
             return False
         self.CollectOptions()
@@ -497,7 +471,7 @@ class MainWindow(Frame):
                     columns.append("summed_deviation")
                     columns.append("maxdeviation_transition")
         if self.output_window != None:
-            self.generator.stop()
+            self.wuggy.stop()
             self.output_window.Destroy()
         self.output_window = ResultsWindow(self, columns=columns)
         self.output_window.Show()
@@ -507,33 +481,43 @@ class MainWindow(Frame):
             if segments == "":
                 pass
             else:
-                self.generator.run(
-                    self.options, segments, expression, self.output_window
-                )
-                if self.stop == True:
+                for output in self.wuggy.run(self.options, segments, expression):
+                    self.output_window.grid.DisplayRow(output)
+                    self.update_status(self.wuggy.time_left, word, self.wuggy.n_checked)
+                    if self.stop:
+                        break
+                self.output_window.ClearStatus()
+
+                if self.stop:
                     break
 
+    def update_status(self, time_left, word, n_checked):
+        self.output_window.SetStatus("%s" % word, 0)
+        self.output_window.SetStatus("%.00f seconds left" % time_left, 1)
+        self.output_window.SetStatus("%d sequences checked" % n_checked, 2)
+        wx.Yield()
+
     def OnMenuStop(self, event):  # wxGlade: MainWindow.<event_handler>
-        self.generator.stop()
+        self.wuggy.stop()
         self.stop = True
 
     def CollectOptions(self):
         self.options["ncandidates"] = self.choice_ncandidates.GetValue()
         self.options["search_time"] = self.choice_search_time.GetValue()
-        self.options[
-            "match_segment_length"
-        ] = self.choice_match_segment_length.GetValue()
+        self.options["match_segment_length"] = (
+            self.choice_match_segment_length.GetValue()
+        )
         self.options["match_plain_length"] = self.choice_match_plain_length.GetValue()
         self.options["concentric"] = self.choice_concentric_matching.GetValue()
-        self.options[
-            "overlapping_segments"
-        ] = self.choice_overlapping_segments.GetValue()
-        self.options[
-            "overlap_numerator"
-        ] = self.overlapping_segments_numerator.GetValue()
-        self.options[
-            "overlap_denominator"
-        ] = self.overlapping_segments_denominator.GetValue()
+        self.options["overlapping_segments"] = (
+            self.choice_overlapping_segments.GetValue()
+        )
+        self.options["overlap_numerator"] = (
+            self.overlapping_segments_numerator.GetValue()
+        )
+        self.options["overlap_denominator"] = (
+            self.overlapping_segments_denominator.GetValue()
+        )
         self.options["lexicality"] = self.choice_output_lexicality.GetValue()
         self.options["old20"] = self.choice_output_old20.GetValue()
         self.options["ned1"] = self.choice_output_ned1.GetValue()
@@ -557,7 +541,8 @@ class MainWindow(Frame):
                 pass
             else:
                 replace = True if result == "replace everything" else False
-                warnings = self.grid.Segment(self.generator, replace=replace)
+                # TODO: provide API on wuggy object
+                warnings = self.grid.Segment(self.wuggy.generator, replace=replace)
                 if len(warnings) > 0:
                     dialog = wx.lib.dialogs.ScrolledMessageDialog(
                         self, "\n".join(warnings), "Warnings"
@@ -605,7 +590,7 @@ class MainWindow(Frame):
             return True
 
     def VerifyModuleLoaded(self):
-        if self.generator._loaded == False:
+        if self.wuggy._loaded == False:
             dialog = wx.MessageDialog(self, "No language module loaded", "Warning")
             dialog.ShowModal()
             dialog.Destroy()

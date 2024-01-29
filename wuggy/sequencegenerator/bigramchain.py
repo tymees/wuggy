@@ -12,7 +12,6 @@ class BigramChain(defaultdict):
         self,
         plugin_module,
         data=None,
-        encoding="utf-8",
         size=100,
         cutoff=1,
         token=False,
@@ -25,7 +24,7 @@ class BigramChain(defaultdict):
             self.hidden_sequence = False
         if data != None:
             self.load(data, size=size, cutoff=cutoff, token=token)
-        self.startkeys = []
+        self.start_keys = {}
         self.status = {"message": "", "progress": 0}
         self.subscribers = []
         self.limit_frequencies = {}
@@ -43,44 +42,33 @@ class BigramChain(defaultdict):
     def load(self, datafile, size=100, cutoff=1, token=False):
         lines = datafile.readlines()
         nlines = float(len(lines))
+
         for i, line in enumerate(lines):
             if i % 1000 == 0:
                 self.set_status("Constructing Bigram Chain", i / nlines * 100)
-            fields = line.strip("\n\t").split(self.plugin_module.separator)
-            reference, input_sequence, frequency = fields
-            frequency = float(frequency) if token == True else 1
-            frequency = 1
-            sequence = self.plugin_module.transform(input_sequence, frequency)
-            n = len(sequence.representation)
-            if frequency >= cutoff and random.randint(1, 100) <= size:
-                for i in range(n):
-                    key = Link(i, sequence.representation[i])
-                    if i + 1 < n:
-                        next_key = Link(i + 1, sequence.representation[i + 1])
-                        self[key][next_key] = (
-                            self[key].get(next_key, 0) + sequence.frequency
-                        )
-            else:
-                pass
+            self._process_line(line, size, cutoff)
+
         datafile.close()
         self.clear_status()
-        self.set_startkeys()
+        self.set_start_keys()
 
-    def set_startkeys(self, reference_sequence=None, fields=None):
-        if fields == None:
-            fields = self.plugin_module.default_fields
-        if reference_sequence == None:
-            self.startkeys = dict(
-                [(key, 0) for key in self.keys() if key.position == 0]
-            )
-        else:
-            reference_values = [
-                reference_sequence[0].__getattribute__(field) for field in fields
-            ]
-            self.startkeys = {}
-            for key in self.keys():
-                if key.position == 0:
-                    self.startkeys[key] = 0
+    def _process_line(self, line, size, cutoff):
+        fields = line.strip("\n\t").split(self.plugin_module.separator)
+        reference, input_sequence, _ = fields
+        sequence = self.plugin_module.transform(input_sequence, frequency=1)
+
+        if sequence.frequency >= cutoff and random.randint(1, 100) <= size:
+            n = len(sequence.representation)
+            for j in range(n):
+                key = Link(j, sequence.representation[j])
+                if j + 1 < n:
+                    next_key = Link(j + 1, sequence.representation[j + 1])
+                    self[key][next_key] = (
+                        self[key].get(next_key, 0) + sequence.frequency
+                    )
+
+    def set_start_keys(self):
+        self.start_keys = {key: 0 for key in self.keys() if key.position == 0}
 
     def get_frequencies(self, reference_sequence):
         frequencies = {}
@@ -135,7 +123,7 @@ class BigramChain(defaultdict):
                         # print 'set %s %s to %d because %d <= %d <= %d' % (key,nextkey,frequency,minfreq,frequency,maxfreq)
                         # print result
         result = result.clean(len(reference_sequence) - 1)
-        result.set_startkeys()
+        result.set_start_keys()
         return result
 
     def segmentset_filter(self, reference_sequence, segmentset):
@@ -147,7 +135,7 @@ class BigramChain(defaultdict):
                     if nextkey.value.letters in segmentset:
                         result[key][nextkey] = frequency
         result = result.clean(len(reference_sequence) - 1)
-        result.set_startkeys()
+        result.set_start_keys()
         return result
 
     def attribute_filter(self, reference_sequence, attribute):
@@ -175,7 +163,6 @@ class BigramChain(defaultdict):
 
     def clean(self, maxpos):
         """Remove chains that can not be completed."""
-        n = len(self)
         result = BigramChain(self.plugin_module)
         for key, nextkeys in self.items():
             for nextkey, frequency in nextkeys.items():
@@ -186,14 +173,14 @@ class BigramChain(defaultdict):
         else:
             return result.clean(maxpos)
 
-    def generate(self, startkeys=None):
-        if startkeys == None:
-            startkeys = self.startkeys
-        startkeys = list(startkeys.items())
-        random.shuffle(startkeys)
-        startkeys = dict(startkeys)
+    def generate(self, start_keys=None):
+        if start_keys is None:
+            start_keys = self.start_keys
+        start_keys = list(start_keys.items())
+        random.shuffle(start_keys)
+        start_keys = dict(start_keys)
         if len(self) > 0:
-            for key in startkeys:
+            for key in start_keys:
                 if key not in self:
                     yield (key.value,)
                 else:

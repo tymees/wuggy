@@ -3,6 +3,7 @@ import os
 from setuptools import setup, find_packages
 
 from distutils.core import setup
+
 # from esky import bdist_esky
 
 import info
@@ -11,12 +12,12 @@ import info
 
 if sys.platform in ["win32", "cygwin", "win64"]:
     freezer_module = "py2exe"
-    freezer_options = {"argv_emulation": False, "windows": ["Wuggy.py"]}
+    freezer_options = {"argv_emulation": False, "windows": ["wuggy.py"]}
 
     # Wuggy_executable = bdist_esky.Executable(
     #     gui_only=True,
     #     description="A multilingual pseudoword generator",
-    #     script="Wuggy.py",
+    #     script="wuggy.py",
     #     icon="icons/wug.ico",
     # )
 
@@ -36,7 +37,7 @@ elif sys.platform == "darwin":
     # Wuggy_executable = bdist_esky.Executable(
     #     gui_only=True,
     #     description="A multilingual pseudoword generator",
-    #     script="Wuggy.py",
+    #     script="wuggy.py",
     # )
 
 lexica = [
@@ -70,7 +71,6 @@ plugins = [
     "orthographic_german.py",
     "orthographic_italian.py",
     "orthographic_polish.py",
-    "orthographic_serbian.py",
     "orthographic_serbian_cyrillic.py",
     "orthographic_serbian_latin.py",
     "orthographic_spanish.py",

@@ -1,12 +1,18 @@
 import codecs
+import os
 from collections import defaultdict
+from types import ModuleType
 
 from wuggy.sequencegenerator import bigramchain
+from wuggy.sequencegenerator.bigramchain import BigramChain
 
 
 class SequenceGenerator:
-    def __init__(self, data_path="data"):
-        self.data_path = data_path
+    def __init__(self, data_path=None):
+        if data_path is not None:  # a data_path was given on the command line
+            self.data_path = data_path
+        else:
+            self.data_path = os.path.join(os.path.abspath(os.curdir), "data")
         self.bigramchain = None
         self.bigramchains = {}
         self.attribute_subchain = None
@@ -18,6 +24,7 @@ class SequenceGenerator:
         self.current_sequence = None
         self.output_mode = None
         self.attribute_filters = {}
+        # TODO What does this actually do?
         self.statistics = {}
         self.word_lexicon = defaultdict(list)
         self.neighbor_lexicon = []
@@ -29,6 +36,7 @@ class SequenceGenerator:
         self.lookup_lexicon = {}
         self.status = {"message": "", "progress": 0}
         self.subscribers = []
+        self.reference_sequence_frequencies = None
 
     def set_status(self, message, progress):
         for receiver in [self] + self.subscribers:
@@ -42,22 +50,20 @@ class SequenceGenerator:
 
     def _load(self, plugin_module, data_file=None, size=100, cutoff=1, token=False):
         if plugin_module.__name__ not in self.bigramchains:
-            if data_file == None:
+            if data_file is None:
                 path = "%s/%s" % (self.data_path, plugin_module.default_data)
                 data_file = codecs.open(path, "r", plugin_module.default_encoding)
-            self.bigramchains[plugin_module.__name__] = bigramchain.BigramChain(
-                plugin_module
-            )
+
+            self.bigramchains[plugin_module.__name__] = BigramChain(plugin_module)
             self.bigramchains[plugin_module.__name__].subscribers.append(self)
             self.bigramchains[plugin_module.__name__].load(
                 data_file, size=size, cutoff=cutoff, token=token
             )
+
         self.activate(plugin_module.__name__)
 
     def activate(self, name):
-        if type(name) == type(
-            codecs
-        ):  # unfortunately, the only way I know to check if something is of type 'module'
+        if isinstance(name, ModuleType):
             name = name.__name__
         self.bigramchain = self.bigramchains[name]
         self.plugin_module = self.bigramchain.plugin_module
@@ -66,7 +72,8 @@ class SequenceGenerator:
         self.load_lookup_lexicon()
 
     def load_word_lexicon(self, data_file=None, cutoff=0):
-        if data_file == None:
+        # TODO: construct path properly
+        if data_file is None:
             data_file = codecs.open(
                 "%s/%s" % (self.data_path, self.plugin_module.default_word_lexicon),
                 "r",
@@ -81,13 +88,16 @@ class SequenceGenerator:
             fields = line.strip().split("\t")
             word = fields[0]
             frequency_per_million = fields[-1]
-            if float(frequency_per_million) > cutoff:
+            # So this is a debug call, but I like it so much I'm leaving this in
+            if word == "poes":
+                print("miauw")
+            if float(frequency_per_million) >= cutoff:
                 self.word_lexicon[word[0], len(word)].append(word)
         data_file.close()
         self.clear_status()
 
     def load_neighbor_lexicon(self, data_file=None, cutoff=1):
-        if data_file == None:
+        if data_file is None:
             data_file = codecs.open(
                 "%s/%s" % (self.data_path, self.plugin_module.default_neighbor_lexicon),
                 "r",
@@ -109,7 +119,7 @@ class SequenceGenerator:
 
     def load_lookup_lexicon(self, data_file=None):
         self.lookup_lexicon = {}
-        if data_file == None:
+        if data_file is None:
             data_file = codecs.open(
                 "%s/%s" % (self.data_path, self.plugin_module.default_lookup_lexicon),
                 "r",
@@ -146,39 +156,34 @@ class SequenceGenerator:
         for name in self.list_statistics():
             function = eval("self.plugin_module.statistic_%s" % (name))
             self.reference_statistics[name] = function(self, self.reference_sequence)
-        # # set the default attributes
-        # for attribute in self.list_default_attributes():
-        #     self.set_attribute_filter(attribute,self.reference_sequence)
 
     def get_limit_frequencies(self, fields):
         limits = []
         if tuple(fields) not in self.bigramchain.limit_frequencies:
             self.bigramchain.build_limit_frequencies(fields)
+
         for i in range(0, len(self.reference_sequence) - 1):
-            subkey_a = (
-                i,
-                tuple(
-                    [
-                        self.reference_sequence[i].__getattribute__(field)
-                        for field in fields
-                    ]
-                ),
-            )
-            subkey_b = (
-                i + 1,
-                tuple(
-                    [
-                        self.reference_sequence[i + 1].__getattribute__(field)
-                        for field in fields
-                    ]
-                ),
-            )
+            subkey_a = self._generate_subkey(i, fields)
+            subkey_b = self._generate_subkey(i + 1, fields)
             subkey = (subkey_a, subkey_b)
+
             try:
                 limits.append(self.bigramchain.limit_frequencies[tuple(fields)][subkey])
-            except:
-                limits.append[{max: 0, min: 0}]
+            except KeyError:
+                limits.append({max: 0, min: 0})
+
         return limits
+
+    def _generate_subkey(self, index, fields):
+        return (
+            index,
+            tuple(
+                [
+                    self.reference_sequence[index].__getattribute__(field)
+                    for field in fields
+                ]
+            ),
+        )
 
     def list_statistics(self):
         names = [
@@ -197,20 +202,25 @@ class SequenceGenerator:
         self.set_statistics(self.list_statistics())
 
     def apply_statistics(self, sequence=None):
-        if sequence == None:
+        # TODO: this name is confusing. I think it should be 'calculate'?
+        if sequence is None:
             sequence = self.current_sequence
+
         for name in self.statistics:
-            function = eval("self.plugin_module.statistic_%s" % (name))
+            function = eval("self.plugin_module.statistic_%s" % name)  # TODO EVIL
+
             if (sequence, name) in self.stat_cache:
                 self.statistics[name] = self.stat_cache[(sequence, name)]
             else:
                 self.statistics[name] = function(self, sequence)
                 self.stat_cache[(sequence, name)] = self.statistics[name]
+
             # compute matching and difference statistics
             if "match" in function.__dict__:
                 self.match_statistics[name] = function.match(
                     self.statistics[name], self.reference_statistics[name]
                 )
+
             if "difference" in function.__dict__:
                 self.difference_statistics[name] = function.difference(
                     self.statistics[name], self.reference_statistics[name]
@@ -230,10 +240,10 @@ class SequenceGenerator:
         return [name.replace("output_", "") for name in names]
 
     def set_output_mode(self, name):
-        self.output_mode = eval("self.plugin_module.output_%s" % (name))
+        self.output_mode = eval("self.plugin_module.output_%s" % name)  # TODO EVIL
 
     def set_attribute_filter(self, name, reference_sequence=None):
-        if reference_sequence == None:
+        if reference_sequence is None:
             reference_sequence = self.reference_sequence
         self.attribute_filters[name] = reference_sequence
         self.attribute_subchain = None
@@ -246,7 +256,7 @@ class SequenceGenerator:
         for attribute, reference_sequence in self.attribute_filters.items():
             subchain = (
                 self.attribute_subchain
-                if self.attribute_subchain != None
+                if self.attribute_subchain is not None
                 else self.bigramchain
             )
             self.attribute_subchain = subchain.attribute_filter(
@@ -260,7 +270,7 @@ class SequenceGenerator:
         del self.attribute_filters[name]
 
     def set_frequency_filter(self, lower, upper, kind="dev", reference_sequence=None):
-        if reference_sequence == None:
+        if reference_sequence is None:
             reference_sequence = self.reference_sequence
         self.frequency_filter = (reference_sequence, lower, upper, kind)
 
@@ -272,7 +282,7 @@ class SequenceGenerator:
         reference_sequence, lower, upper, kind = self.frequency_filter
         subchain = (
             self.attribute_subchain
-            if self.attribute_subchain != None
+            if self.attribute_subchain is not None
             else self.bigramchain
         )
         self.frequency_subchain = subchain.frequency_filter(
@@ -280,7 +290,7 @@ class SequenceGenerator:
         )
 
     def set_segmentset_filter(self, segmentset):
-        if type(segmentset) != set:
+        if not isinstance(segmentset, set):
             segmentset = set(segmentset)
         self.segmentset_filter = segmentset
 
@@ -290,12 +300,14 @@ class SequenceGenerator:
 
     def apply_segmentset_filter(self):
         segmentset = self.segmentset_filter
-        if self.frequency_subchain != None:
+
+        if self.frequency_subchain is not None:
             subchain = self.frequency_subchain
-        elif self.attribute_subchain != None:
+        elif self.attribute_subchain is not None:
             subchain = self.attribute_subchain
         else:
             subchain = self.bigramchain
+
         self.segmentset_subchain = subchain.segmentset_filter(
             self.reference_sequence, segmentset
         )
@@ -305,33 +317,14 @@ class SequenceGenerator:
         self.clear_frequency_filter()
 
     def generate(self, clear_cache=True):
-        if clear_cache == True:
+        if clear_cache:
             self.clear_sequence_cache()
-        if self.output_mode == None:
-            output_mode = self.plugin_module.output_pass
-        else:
-            output_mode = self.output_mode
-        if (
-            len(self.attribute_filters) == 0
-            and self.frequency_subchain == None
-            and self.segmentset_subchain == None
-        ):
-            subchain = self.bigramchain
-        if len(self.attribute_filters) != 0:
-            if self.attribute_subchain == None:
-                self.apply_attribute_filters()
-            subchain = self.attribute_subchain
-        if self.frequency_filter != None:
-            self.apply_frequency_filter()
-            subchain = self.frequency_subchain
-        if self.segmentset_filter != None:
-            self.apply_segmentset_filter()
-            subchain = self.segmentset_subchain
-        if self.reference_sequence != None:
-            subchain = subchain.clean(len(self.reference_sequence) - 1)
-            subchain.set_startkeys(self.reference_sequence)
-        else:
-            subchain.set_startkeys()
+
+        output_mode = self.output_mode or self.plugin_module.output_pass
+
+        subchain = self._get_subchain()
+        subchain.set_start_keys()
+
         for sequence in subchain.generate():
             if self.plugin_module.output_plain(sequence) in self.sequence_cache:
                 pass
@@ -340,3 +333,28 @@ class SequenceGenerator:
                 self.current_sequence = sequence
                 self.apply_statistics()
                 yield output_mode(sequence)
+
+    def _get_subchain(self) -> BigramChain:
+        subchain = None
+
+        if (
+            len(self.attribute_filters) == 0
+            and self.frequency_subchain is None
+            and self.segmentset_subchain is None
+        ):
+            subchain = self.bigramchain
+
+        if len(self.attribute_filters) != 0:
+            if self.attribute_subchain is None:
+                self.apply_attribute_filters()
+            subchain = self.attribute_subchain
+
+        if self.frequency_filter is not None:
+            self.apply_frequency_filter()
+            subchain = self.frequency_subchain
+
+        if self.segmentset_filter is not None:
+            self.apply_segmentset_filter()
+            subchain = self.segmentset_subchain
+
+        return subchain

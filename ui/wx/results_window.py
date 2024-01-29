@@ -8,8 +8,8 @@ import wx.grid
 
 # end wxGlade
 
-from ui.wx.Grid import ResultsGrid
-from .Frame import Frame
+from ui.wx.grid import ResultsGrid
+from .frame import Frame
 
 # begin wxGlade: extracode
 
@@ -63,7 +63,7 @@ class ResultsWindow(Frame):
     def OnClose(self, event):
         parent = self.GetParent()
         parent.output_window = None
-        parent.generator.Stop()
+        parent.wuggy.stop()
         parent.stop = True
         self.Destroy()
 
