@@ -6,6 +6,7 @@ import re
 
 import wx
 import wx.lib.dialogs
+import wx.adv
 
 from Frame import Frame
 from ResultsWindow import ResultsWindow
@@ -330,7 +331,7 @@ class MainWindow(Frame):
             self.choice_ncandidates, 0, wx.ALIGN_CENTER_VERTICAL, 0
         )
         ncandidates_subsizer.Add(
-            self.label_per_word, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.label_per_word, 0, wx.EXPAND, 0
         )
         ncandidates_sizer.Add(ncandidates_subsizer, 1, wx.EXPAND, 0)
         generalsettings_sizer.Add(ncandidates_sizer, 1, wx.EXPAND, 0)
@@ -339,7 +340,7 @@ class MainWindow(Frame):
         )
         searchtime_subsizer.Add(self.choice_search_time, 0, wx.ALIGN_CENTER_VERTICAL, 0)
         searchtime_subsizer.Add(
-            self.label_seconds, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.label_seconds, 0, wx.EXPAND, 0
         )
         searchtime_sizer.Add(searchtime_subsizer, 1, wx.EXPAND, 0)
         generalsettings_sizer.Add(searchtime_sizer, 1, wx.EXPAND, 0)
@@ -347,59 +348,59 @@ class MainWindow(Frame):
             generalsettings_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20
         )
         filter_sizer.Add(
-            self.choice_match_segment_length, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_match_segment_length, 1, wx.EXPAND, 0
         )
         filter_sizer.Add(
-            self.choice_match_plain_length, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_match_plain_length, 1, wx.EXPAND, 0
         )
         filter_sizer.Add(
-            self.choice_concentric_matching, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_concentric_matching, 1, wx.EXPAND, 0
         )
 
         segmentmatch_sizer.Add(
-            self.choice_overlapping_segments, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_overlapping_segments, 0, wx.EXPAND, 0
         )
         segmentmatch_sizer.Add(
             self.overlapping_segments_numerator,
             1,
-            wx.EXPAND | wx.ALIGN_CENTER_VERTICAL,
+            wx.EXPAND,
             0,
         )
         segmentmatch_sizer.Add(
-            self.fraction_label, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.fraction_label, 1, wx.EXPAND, 0
         )
         segmentmatch_sizer.Add(
             self.overlapping_segments_denominator,
             1,
-            wx.EXPAND | wx.ALIGN_CENTER_VERTICAL,
+            wx.EXPAND,
             0,
         )
         segmentmatch_sizer.Add(
             self.choice_overlapping_segments_comparison,
             0,
-            wx.EXPAND | wx.ALIGN_CENTER_VERTICAL,
+            wx.EXPAND,
             0,
         )
 
         filter_sizer.Add(segmentmatch_sizer, 0, wx.EXPAND, 0)
         settingspanel_sizer.Add(filter_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
         outputopts_sizer.Add(
-            self.choice_output_mode, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_output_mode, 1, wx.EXPAND, 0
         )
         outputopts_sizer.Add(
-            self.choice_output_lexicality, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_output_lexicality, 1, wx.EXPAND, 0
         )
         outputopts_sizer.Add(
-            self.choice_output_old20, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_output_old20, 1, wx.EXPAND, 0
         )
         outputopts_sizer.Add(
-            self.choice_output_ned1, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_output_ned1, 1, wx.EXPAND, 0
         )
         outputopts_sizer.Add(
-            self.choice_output_overlap, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_output_overlap, 1, wx.EXPAND, 0
         )
         outputopts_sizer.Add(
-            self.choice_output_max_deviation, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0
+            self.choice_output_max_deviation, 1, wx.EXPAND, 0
         )
         settingspanel_sizer.Add(outputopts_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 20)
         self.splitterwindow_rightpanel.SetSizer(settingspanel_sizer)
@@ -624,14 +625,14 @@ class MainWindow(Frame):
     def OnMenuAbout(self, event):  # wxGlade: MainWindow.<event_handler>
         # On OS X some of the info seems to beread from info.plist
         # Need to see what it does on Win and Linux
-        about = wx.AboutDialogInfo()
+        about = wx.adv.AboutDialogInfo()
         about.Name = info.Name
         about.Version = info.Version
         about.Copyright = info.Copyright
         about.Description = info.Description
         about.WebSite = info.WebSite
         # about.Developers = info.Developers
-        wx.AboutBox(about)
+        wx.adv.AboutBox(about)
 
     def OnMenuUpdate(self, event):
         wx.GetApp().CheckForUpdate()
