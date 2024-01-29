@@ -6,6 +6,7 @@ import sys
 
 # begin wxGlade: dependencies
 import wx.grid
+
 # end wxGlade
 
 from Grid import ResultsGrid
@@ -15,11 +16,12 @@ from Frame import Frame
 
 # end wxGlade
 
+
 class ResultsWindow(Frame):
     def __init__(self, *args, **kwds):
-        self.columns=['word','match']+kwds["columns"]
-        del kwds['columns']
-        self.rowcursor=0
+        self.columns = ["word", "match"] + kwds["columns"]
+        del kwds["columns"]
+        self.rowcursor = 0
         # begin wxGlade: ResultsWindow.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
@@ -51,29 +53,28 @@ class ResultsWindow(Frame):
         self.Layout()
         self.Centre()
         # end wxGlade
-    
+
     def InitializeGrid(self):
         self.grid.SetNumberRows(0)
         self.grid.SetNumberCols(len(self.columns))
-        for colnum,name in enumerate(self.columns):
+        for colnum, name in enumerate(self.columns):
             self.grid.SetColLabelValue(colnum, name.title())
         self.grid.AutoSizeColumns()
-    
-    def OnClose(self,event):
-        parent=self.GetParent()
-        parent.outputwindow=None
+
+    def OnClose(self, event):
+        parent = self.GetParent()
+        parent.outputwindow = None
         parent.generator.Stop()
-        parent.stop=True
+        parent.stop = True
         self.Destroy()
-    
+
     def SetStatus(self, message, index=0):
         self.statusbar.SetStatusText(message, index)
 
     def ClearStatus(self):
-        n=self.statusbar.GetFieldsCount()
-        for i in range(0,n):
-            self.statusbar.SetStatusText("",i)
-        
+        n = self.statusbar.GetFieldsCount()
+        for i in range(0, n):
+            self.statusbar.SetStatusText("", i)
+
+
 # end of class ResultsWindow
-
-

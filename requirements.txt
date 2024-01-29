@@ -1,0 +1,3 @@
+python-Levenshtein
+pip-tools
+wxpython
