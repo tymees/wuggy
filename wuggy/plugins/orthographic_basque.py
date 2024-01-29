@@ -5,8 +5,8 @@ default_neighbor_lexicon = "orthographic_basque.txt"
 default_word_lexicon = "orthographic_basque.txt"
 default_lookup_lexicon = "orthographic_basque.txt"
 from .subsyllabic_common import *
-import plugins.orth.es as language
-import plugins.segment as segment
+from .. import plugins as language
+import wuggy.plugins.segment as segment
 
 segment_function = segment.start_peak_end
 

@@ -1,0 +1,16 @@
+import wuggy.plugins.orthographic_english
+import wuggy.plugins.orthographic_dutch
+import wuggy.plugins.orthographic_french
+import wuggy.plugins.phonetic_french
+import wuggy.plugins.orthographic_german
+import wuggy.plugins.orthographic_serbian_latin
+import wuggy.plugins.orthographic_serbian_cyrillic
+import wuggy.plugins.orthographic_spanish
+import wuggy.plugins.orthographic_basque
+import wuggy.plugins.orthographic_vietnamese
+import wuggy.plugins.phonetic_italian
+import wuggy.plugins.phonetic_english_celex
+import wuggy.plugins.phonetic_english_cmu
+import wuggy.plugins.orthographic_italian
+import wuggy.plugins.orthographic_polish
+import wuggy.plugins.orthographic_turkish

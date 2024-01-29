@@ -5,8 +5,8 @@ default_neighbor_lexicon = "phonetic_italian.txt"
 default_word_lexicon = "phonetic_italian.txt"
 default_lookup_lexicon = "phonetic_italian.txt"
 from .subsyllabic_common import *
-import plugins.phon.it as language
-import plugins.segment as segment
+import wuggy.plugins.phon.it as language
+import wuggy.plugins.segment as segment
 
 segment_function = segment.start_peak_end
 

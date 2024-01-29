@@ -2,12 +2,12 @@ import codecs
 import sys
 
 import wx
-import wxspreadsheet
+from .wxspreadsheet import Spreadsheet
 
 newline = "\r\n" if sys.platform == "win32" else "\n"
 
 
-class Grid(wxspreadsheet.Spreadsheet):
+class Grid(Spreadsheet):
     def __init__(self, *args, **kwds):
         wx.grid.Grid.__init__(self, *args, **kwds)
         self.rowcursor = 0

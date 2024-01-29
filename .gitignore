@@ -3,3 +3,5 @@ data/support
 build
 dist
 deploy-osx.py
+venv
+.env

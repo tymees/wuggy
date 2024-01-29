@@ -1,20 +1,17 @@
 # -*- coding: utf-8 -*-
-import codecs
+import os.path
 import threading
-import time
 import re
 
 import wx
 import wx.lib.dialogs
 import wx.adv
 
-from Frame import Frame
-from ResultsWindow import ResultsWindow
-from Grid import InputGrid
-from Generator import Generator
+from .Frame import Frame
+from .ResultsWindow import ResultsWindow
+from .Grid import InputGrid
+from wuggy.Generator import Generator
 import info
-
-import config
 
 import wx.grid
 
@@ -28,7 +25,7 @@ class MainWindow(Frame):
             "output_mode": "Plain",
             "overlapping_segments_comparison": "Maximum",
         }
-        self.outputwindow = None
+        self.output_window = None
         self.generator = Generator()
         self.stop = False
         # begin wxGlade: MainWindow.__init__
@@ -36,13 +33,12 @@ class MainWindow(Frame):
             wx.CAPTION
             | wx.CLOSE_BOX
             | wx.MINIMIZE_BOX
-            | wx.MAXIMIZE
             | wx.MAXIMIZE_BOX
             | wx.SYSTEM_MENU
             | wx.RESIZE_BORDER
             | wx.CLIP_CHILDREN
         )
-        wx.Frame.__init__(self, *args, **kwds)
+        super().__init__(*args, **kwds)
         self.splitterwindow = wx.SplitterWindow(self, -1, style=wx.SP_3D | wx.SP_BORDER)
         self.splitterwindow_rightpanel = wx.Panel(self.splitterwindow, -1)
         self.generalsettings_sizer_staticbox = wx.StaticBox(
@@ -132,10 +128,6 @@ class MainWindow(Frame):
         self.menubar.Append(self.menu_tools, "&Tools")
         self.menu_help = wx.Menu()
         self.menu_help.Append(wx.ID_ABOUT, "About Wuggy", "", wx.ITEM_NORMAL)
-        self.menu_update = wx.MenuItem(
-            self.menu_help, wx.NewId(), "&Check for Update", "", wx.ITEM_NORMAL
-        )
-        self.menu_help.Append(self.menu_update)
         self.menubar.Append(self.menu_help, "&Help")
         self.SetMenuBar(self.menubar)
         # Menu Bar end
@@ -245,7 +237,6 @@ class MainWindow(Frame):
         self.Bind(wx.EVT_MENU, self.OnMenuSegment, self.menu_autosegment)
         self.Bind(wx.EVT_MENU, self.OnMenuVerify, self.menu_verify)
         self.Bind(wx.EVT_MENU, self.OnMenuAbout, id=wx.ID_ABOUT)
-        self.Bind(wx.EVT_MENU, self.OnMenuUpdate, self.menu_update)
         self.Bind(wx.EVT_CHOICE, self.OnChoiceModule, self.choice_language)
         self.Bind(wx.EVT_CHOICE, self.OnChoiceOutputType, self.choice_output_type)
         self.Bind(wx.EVT_CHOICE, self.OnChoiceOutputMode, self.choice_output_mode)
@@ -258,7 +249,7 @@ class MainWindow(Frame):
         # end wxGlade
         self.Bind(wx.EVT_MENU, self.OnMenuQuit, id=wx.ID_EXIT)
 
-        for module_name in sorted(self.generator.plugin_modules.keys()):
+        for module_name in sorted(self.generator._plugin_modules.keys()):
             self.choice_language.Append(module_name)
 
     def __set_properties(self):
@@ -421,7 +412,7 @@ class MainWindow(Frame):
         self.grid.SaveData()
 
     def OnMenuSaveOutput(self, event):  # wxGlade: MainWindow.<event_handler>
-        self.outputwindow.grid.SaveData(headers=True)
+        self.output_window.grid.SaveData(headers=True)
 
     def OnChangeCell(self, event):  # wxGlade: MainWindow.<event_handler>
         print("Event handler `OnChangeCell' not implemented!")
@@ -454,9 +445,9 @@ class MainWindow(Frame):
         if module_name.startswith("Choose"):
             pass
         else:
-            plugin_module = self.generator.plugin_modules[module_name]
+            plugin_module = self.generator._plugin_modules[module_name]
             t = threading.Thread(
-                target=self.generator.Load, args=[plugin_module, 100, 1, False]
+                target=self.generator.load, args=[plugin_module, 100, 1, False]
             )
             t.start()
             message = "Loading %s language module\n\n" % module_name
@@ -505,25 +496,25 @@ class MainWindow(Frame):
                 if colname in ["maxdeviation"]:
                     columns.append("summed_deviation")
                     columns.append("maxdeviation_transition")
-        if self.outputwindow != None:
-            self.generator.Stop()
-            self.outputwindow.Destroy()
-        self.outputwindow = ResultsWindow(self, columns=columns)
-        self.outputwindow.Show()
+        if self.output_window != None:
+            self.generator.stop()
+            self.output_window.Destroy()
+        self.output_window = ResultsWindow(self, columns=columns)
+        self.output_window.Show()
         self.stop = False
         array = self.grid.MakeArray()
         for word, segments, expression in array:
             if segments == "":
                 pass
             else:
-                self.generator.Run(
-                    self.options, segments, expression, self.outputwindow
+                self.generator.run(
+                    self.options, segments, expression, self.output_window
                 )
                 if self.stop == True:
                     break
 
     def OnMenuStop(self, event):  # wxGlade: MainWindow.<event_handler>
-        self.generator.Stop()
+        self.generator.stop()
         self.stop = True
 
     def CollectOptions(self):
@@ -614,7 +605,7 @@ class MainWindow(Frame):
             return True
 
     def VerifyModuleLoaded(self):
-        if self.generator.loaded == False:
+        if self.generator._loaded == False:
             dialog = wx.MessageDialog(self, "No language module loaded", "Warning")
             dialog.ShowModal()
             dialog.Destroy()
@@ -633,9 +624,6 @@ class MainWindow(Frame):
         about.WebSite = info.WebSite
         # about.Developers = info.Developers
         wx.adv.AboutBox(about)
-
-    def OnMenuUpdate(self, event):
-        wx.GetApp().CheckForUpdate()
 
     def OnMenuQuit(self, event):
         self.Close()

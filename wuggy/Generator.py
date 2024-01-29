@@ -7,8 +7,8 @@ from fractions import Fraction
 
 import wx
 
-import sequencegenerator.generator
 import config
+from wuggy.sequencegenerator.generator import SequenceGenerator
 
 if config.cl_plugin_path != None:  # a command line argument was given
     sys.path.append(plugin.path)
@@ -17,38 +17,34 @@ elif sys.platform.startswith("win"):
 elif sys.platform == "darwin":
     sys.path.append(os.curdir)
 
-import plugins
+from wuggy import plugins
 
+# TODO: what the hell is this override doing?
 
-class Generator(sequencegenerator.generator.Generator):
+class Generator(SequenceGenerator):
     def __init__(self):
-        sequencegenerator.generator.Generator.__init__(self)
+        super().__init__()
         if config.cl_data_path != None:  # a data_path was given on the command line
             self.data_path = config.cl_data_path
-        elif sys.platform.startswith("win"):
-            self.data_path = "data"
-        elif sys.platform == "darwin":
-            self.data_path = "data"
         else:
-            self.data_path = "data"
-        self.loaded = False
-        self.stop = False
-        self.plugin_modules = {}
+            self.data_path = os.path.join(os.path.abspath(os.curdir), "data")
+        self._loaded = False
+        self._plugin_modules = {}
         self.get_plugins()
 
     def get_plugins(self):
         for module_name in dir(plugins):
-            module_object = eval("plugins.%s" % module_name)
+            module_object = eval("plugins.%s" % module_name) # TODO: EVIL
             try:
-                self.plugin_modules[module_object.public_name] = module_object
+                self._plugin_modules[module_object.public_name] = module_object
             except AttributeError:
                 pass
 
-    def Load(self, plugin_module, size=100, cutoff=1, token=False):
-        self.load(plugin_module, size=size, cutoff=cutoff, token=token)
-        self.loaded = True
+    def load(self, plugin_module, size=100, cutoff=1, token=False):
+        self._load(plugin_module, size=size, cutoff=cutoff, token=token)
+        self._loaded = True
 
-    def Run(self, options, reference_sequence, match_expression, outputwindow):
+    def run(self, options, reference_sequence, match_expression, outputwindow):
         # set the output window
         self.outputwindow = outputwindow
         # clear previous results
@@ -102,7 +98,7 @@ class Generator(sequencegenerator.generator.Generator):
 
         # the while loop is only relevant for concentric search
         while 1:
-            self.UpdateStatus()
+            self.update_status()
             if self.stopgenerator == True or self.elapsed_time > self.maxtime:
                 break
             if options["concentric"] == True:
@@ -205,7 +201,7 @@ class Generator(sequencegenerator.generator.Generator):
                 self.clear_statistics()
                 self.set_statistics(required_statistics)
                 self.nchecked = self.nchecked + 1
-                self.UpdateStatus()
+                self.update_status()
                 if (
                     self.elapsed_time >= self.maxtime
                     or self.ncandidates >= self.maxcandidates
@@ -215,17 +211,17 @@ class Generator(sequencegenerator.generator.Generator):
             self.stopgenerator = True
         self.outputwindow.ClearStatus()
 
-    def GetElapsedTime(self):
+    def get_elapsed_time(self):
         return time.time() - self.starttime
 
-    elapsed_time = property(GetElapsedTime)
+    elapsed_time = property(get_elapsed_time)
 
-    def UpdateStatus(self):
+    def update_status(self):
         time_left = self.maxtime - self.elapsed_time
         self.outputwindow.SetStatus("%s" % (self.raw_reference_sequence), 0)
         self.outputwindow.SetStatus("%.00f seconds left" % (time_left), 1)
         self.outputwindow.SetStatus("%d sequences checked" % (self.nchecked), 2)
-        wx.Yield()
+        wx.Yield() # TODO: move!
 
-    def Stop(self):
+    def stop(self):
         self.stopgenerator = True

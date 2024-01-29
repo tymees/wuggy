@@ -4,18 +4,13 @@ import random
 
 import sys
 
-sys.path.append("../")
+sys.path.append("../../")
 # sys.path.append('../..')
-from generator import Generator
-from plugins import (
-    orthographic_dutch,
-    orthographic_english,
-    orthographic_french,
-    orthographic_basque,
-)
+from generator import SequenceGenerator
+from wuggy.plugins import orthographic_basque
 
-g = Generator()
-g.data_path = "../data"
+g = SequenceGenerator()
+g.data_path = "../../data"
 g.load(orthographic_basque)
 g.load_word_lexicon()
 g.load_neighbor_lexicon()

@@ -5,8 +5,8 @@ default_neighbor_lexicon = "orthographic_dutch.txt"
 default_word_lexicon = "orthographic_dutch.txt"
 default_lookup_lexicon = "orthographic_dutch.txt"
 from .subsyllabic_common import *
-import plugins.orth.nl as language
-import plugins.segment as segment
+import wuggy.plugins.orth.nl as language
+import wuggy.plugins.segment as segment
 
 segment_function = segment.start_peak_end
 

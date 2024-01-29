@@ -5,8 +5,8 @@ default_neighbor_lexicon = "orthographic_german.txt"
 default_word_lexicon = "orthographic_german.txt"
 default_lookup_lexicon = "orthographic_german.txt"
 from .subsyllabic_common import *
-import plugins.orth.de as language
-import plugins.segment as segment
+import wuggy.plugins.orth.de as language
+import wuggy.plugins.segment as segment
 
 segment_function = segment.start_peak_end
 

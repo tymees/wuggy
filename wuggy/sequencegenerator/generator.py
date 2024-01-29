@@ -1,18 +1,12 @@
-import os
-import sys
-import random
 import codecs
-from fractions import Fraction
 from collections import defaultdict
-import pickle
-import threading
 
-from sequencegenerator import bigramchain
+from wuggy.sequencegenerator import bigramchain
 
 
-class Generator(object):
-    def __init__(self):
-        self.data_path = "data"
+class SequenceGenerator:
+    def __init__(self, data_path="data"):
+        self.data_path = data_path
         self.bigramchain = None
         self.bigramchains = {}
         self.attribute_subchain = None
@@ -46,7 +40,7 @@ class Generator(object):
             receiver.status["message"] = ""
             receiver.status["progress"] = 0
 
-    def load(self, plugin_module, data_file=None, size=100, cutoff=1, token=False):
+    def _load(self, plugin_module, data_file=None, size=100, cutoff=1, token=False):
         if plugin_module.__name__ not in self.bigramchains:
             if data_file == None:
                 path = "%s/%s" % (self.data_path, plugin_module.default_data)

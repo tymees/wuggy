@@ -5,8 +5,8 @@ default_neighbor_lexicon = "orthographic_vietnamese.txt"
 default_word_lexicon = "orthographic_vietnamese.txt"
 default_lookup_lexicon = "orthographic_vietnamese.txt"
 from .subsyllabic_common import *
-import plugins.orth.vi as language
-import plugins.segment as segment
+import wuggy.plugins.orth.vi as language
+import wuggy.plugins.segment as segment
 
 segment_function = segment.start_peak_end
 
